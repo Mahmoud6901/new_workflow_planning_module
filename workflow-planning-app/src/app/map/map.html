@@ -1,0 +1,88 @@
+<div class="map-container">
+  <!-- Map View Container -->
+  <div #mapViewNode class="map-view" id="mapViewDiv"></div>
+
+  <!-- Upload Panel -->
+  <div class="upload-panel">
+    <div class="upload-section">
+      <h3>Upload Shapefile</h3>
+
+      <!-- File Upload Area -->
+      <div class="upload-area" (drop)="onFileDrop($event)" (dragover)="onDragOver($event)"
+        [class.uploading]="isUploading">
+
+        <!-- File Input -->
+        <input type="file" id="shapefileInput" class="file-input" accept=".zip" (change)="onFileSelected($event)">
+
+        <label for="shapefileInput" class="upload-label">
+          <div class="upload-content">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">
+              <span class="primary-text">Click to upload or drag and drop</span>
+              <span class="secondary-text">
+                Supported formats: {{ supportedFormats.join(', ') }}
+              </span>
+              <span class="size-text">
+                Maximum file size: {{ uploadShapefileService.getMaxFileSize() / (1024 * 1024) }}MB
+              </span>
+            </div>
+          </div>
+        </label>
+
+        <!-- Upload Progress -->
+        <div *ngIf="isUploading" class="upload-progress">
+          <div class="spinner"></div>
+          <span>Processing...</span>
+        </div>
+      </div>
+
+      <!-- Upload Message -->
+      <div *ngIf="uploadMessage" class="upload-message"
+        [class.error]="uploadMessage.includes('Failed') || uploadMessage.includes('Error') || uploadMessage.includes('Invalid') || uploadMessage.includes('exceeds')"
+        [innerHTML]="uploadMessage">
+      </div>
+    </div>
+
+    <!-- Graphics Management -->
+    <div class="layer-section" *ngIf="getGraphicsCount() > 0">
+      <h4>Uploaded Graphics ({{ getGraphicsCount() }})</h4>
+
+      <div class="layer-list">
+        <div *ngFor="let graphicInfo of getGraphicsInfo()" class="layer-item">
+          <div class="layer-info">
+            <span class="layer-title">{{ graphicInfo.title }}</span>
+            <span class="layer-status loaded">
+              {{ graphicInfo.type | titlecase }} geometry
+            </span>
+          </div>
+
+          <div class="layer-controls">
+            <button class="toggle-btn" (click)="toggleGraphicVisibility(graphicInfo.id)"
+              [class.visible]="graphicInfo.visible">
+              {{ graphicInfo.visible ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button class="clear-btn" (click)="clearShapefileGraphics()">
+        Clear All Graphics
+      </button>
+
+      <button class="split-btn" (click)="splitLinesByVertices()" [disabled]="getGraphicsCount() === 0 || isProcessing">
+        Split Lines by Vertices
+      </button>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions" *ngIf="getGraphicsCount() === 0 && !uploadMessage">
+    <h4>How to use:</h4>
+    <ol>
+      <li>Upload a zipped shapefile (.zip)</li>
+      <li>The shapefile will be displayed on the map</li>
+      <li>Use the basemap gallery (top-right) to change the background map</li>
+      <li>Manage uploaded graphics using the layer controls</li>
+    </ol>
+  </div>
+</div>

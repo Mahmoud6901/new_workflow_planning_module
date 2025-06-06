@@ -1,0 +1,25 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* ArcGIS CSS - Required for proper map styling - Must come first */
+@import url('https://js.arcgis.com/4.31/@arcgis/core/assets/esri/themes/light/main.css');
+
+/* Global Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
