@@ -92,7 +92,7 @@ export class UploadShapefileService {
           const arrayBuffer = event.target.result as ArrayBuffer;
           const features = this.shpjs.parseZip(arrayBuffer)
           let newGraphic: Graphic[] = [];
-          // Convert LineString coordinates to Polyline paths
+          // Convert LineString and MultiLineString coordinates to Polyline paths
           features.features.map((feature: any) => {
             if (feature) {
 
@@ -101,13 +101,37 @@ export class UploadShapefileService {
                 const graphic = new Graphic({
                   geometry: {
                     type: 'polyline',
-                    paths: feature.geometry.coordinates, // LineString coordinates become a single path
+                    paths: [feature.geometry.coordinates], // LineString coordinates become a single path
                   } as any,
-                  attributes: feature.properties
+                  attributes: {
+                    ...feature.properties,
+                    ORIGINAL_GEOM_TYPE: 'LineString', // Track original geometry type
+                    LINE_COUNT: 1 // Single line
+                  }
                 });
                 newGraphic.push(graphic);
                 return graphic;
               }
+
+              if (feature.geometry && feature.geometry.type === 'MultiLineString') {
+                // Convert MultiLineString to ArcGIS Graphic
+                // MultiLineString coordinates are an array of LineString coordinate arrays
+                // Each LineString in the MultiLineString becomes a separate path in the polyline
+                const graphic = new Graphic({
+                  geometry: {
+                    type: 'polyline',
+                    paths: feature.geometry.coordinates, // Each LineString becomes a separate path
+                  } as any,
+                  attributes: {
+                    ...feature.properties,
+                    ORIGINAL_GEOM_TYPE: 'MultiLineString', // Track original geometry type
+                    LINE_COUNT: feature.geometry.coordinates.length // Number of lines in MultiLineString
+                  }
+                });
+                newGraphic.push(graphic);
+                return graphic;
+              }
+
               // For other geometry types, create a basic Graphic
               const graphic = new Graphic({
                 geometry: feature.geometry,
@@ -208,7 +232,7 @@ export class UploadShapefileService {
         const geometryType = graphic.geometry.type;
 
         if (geometryType === 'polyline') {
-          // Handle polyline geometry
+          // Handle polyline geometry (includes converted LineString and MultiLineString)
           const segments = await this.splitPolylineByVertices(graphic);
           segmentedLines.push(...segments);
           totalSegmentsCreated += segments.length;
@@ -291,7 +315,9 @@ export class UploadShapefileService {
                 VERTEX_START: vertexIndex,
                 VERTEX_END: vertexIndex + 1,
                 ORIGINAL_FID: polylineGraphic.attributes?.OBJECTID || polylineGraphic.attributes?.FID || pathIndex,
-                SEGMENT_LENGTH: this.calculateSegmentLength(startVertex, endVertex)
+                SEGMENT_LENGTH: this.calculateSegmentLength(startVertex, endVertex),
+                TOTAL_PATHS: polylineGeometry.paths.length, // Indicates if this came from MultiLineString
+                IS_MULTILINE: polylineGeometry.paths.length > 1 ? 'YES' : 'NO'
               }
             });
 

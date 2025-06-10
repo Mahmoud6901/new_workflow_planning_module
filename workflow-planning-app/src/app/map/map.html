@@ -72,6 +72,11 @@
       <button class="split-btn" (click)="splitLinesByVertices()" [disabled]="getGraphicsCount() === 0 || isProcessing">
         Split Lines by Vertices
       </button>
+
+      <button class="snapping-btn" (click)="toggleSnapping()" [class.enabled]="isSnappingEnabled">
+        <span class="snapping-icon">🧲</span>
+        Snapping: {{ getSnappingStatus() }}
+      </button>
     </div>
   </div>
 
@@ -81,8 +86,18 @@
     <ol>
       <li>Upload a zipped shapefile (.zip)</li>
       <li>The shapefile will be displayed on the map</li>
+      <li>Use the sketch widget (top-left) for full editing capabilities:</li>
+      <li style="margin-left: 20px;">• Click to select graphics (hold Ctrl for multiple selection)</li>
+      <li style="margin-left: 20px;">• Drag vertices to reshape lines and polygons</li>
+      <li style="margin-left: 20px;">• Drag graphics to move them</li>
+      <li style="margin-left: 20px;">• Use corner handles to scale/resize graphics</li>
+      <li style="margin-left: 20px;">• Use rotation handle to rotate graphics</li>
+      <li style="margin-left: 20px;">• Press Delete key to remove selected graphics</li>
+      <li style="margin-left: 20px;">• Use snapping for precise vertex alignment (toggle snapping button)</li>
+      <li>Use Ctrl+Z for undo and Ctrl+Y for redo operations</li>
       <li>Use the basemap gallery (top-right) to change the background map</li>
-      <li>Manage uploaded graphics using the layer controls</li>
+      <li>Toggle snapping for precise editing with yellow highlight feedback</li>
+      <li>Split lines by vertices or manage graphics using the controls</li>
     </ol>
   </div>
 </div>

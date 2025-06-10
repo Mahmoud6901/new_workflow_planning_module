@@ -20,7 +20,8 @@
   top: 20px;
   left: 20px;
   width: 350px;
-  max-height: calc(100vh - 40px);
+  height: 100%;
+  max-height: calc(100vh - 14vh);
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -272,6 +273,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  margin-bottom: 10px;
 }
 
 .split-btn:hover:not(:disabled) {
@@ -282,6 +284,51 @@
   background: #6c757d;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Snapping Button */
+.snapping-btn {
+  width: 100%;
+  padding: 10px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.snapping-btn.enabled {
+  background: #007bff;
+}
+
+.snapping-btn:hover {
+  background: #5a6268;
+}
+
+.snapping-btn.enabled:hover {
+  background: #0056b3;
+}
+
+.snapping-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.snapping-btn.enabled .snapping-icon {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 /* Instructions */

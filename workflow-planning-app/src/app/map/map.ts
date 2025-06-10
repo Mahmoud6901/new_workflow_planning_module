@@ -2,6 +2,10 @@ import { Component, OnInit, OnDestroy, ElementRef, ViewChild, inject } from '@an
 import { CommonModule } from '@angular/common';
 import { UploadShapefileService } from '../services/upload-shapefile';
 import { Subscription } from 'rxjs';
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
+import MapView from "@arcgis/core/views/MapView.js";
+import Sketch from "@arcgis/core/widgets/Sketch.js";
+import Map from '@arcgis/core/Map';
 
 @Component({
   selector: 'app-map',
@@ -19,6 +23,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private map: any;
   private view: any;
   private graphicsLayer: any;
+  private sketchWidget: any;
   private shapefileGraphics: any[] = [];
   private subscriptions: Subscription[] = [];
 
@@ -28,14 +33,22 @@ export class MapComponent implements OnInit, OnDestroy {
   uploadMessage = '';
   supportedFormats: string[] = [];
 
+  // Snapping state
+  isSnappingEnabled = true;
+
   constructor() {
     this.supportedFormats = this.uploadShapefileService.getSupportedFormats();
   }
 
   async ngOnInit(): Promise<void> {
     try {
-      await this.initializeMap();
-      this.subscribeToUploadStatus();
+      this.initializeMap().then(() => {
+        this.initializeSketchWidget();
+        this.subscribeToUploadStatus();
+      }).catch((error) => {
+        console.error('Error initializing map:', error);
+        this.uploadMessage = 'Failed to initialize map';
+      });
     } catch (error) {
       console.error('Error initializing map:', error);
       this.uploadMessage = 'Failed to initialize map';
@@ -48,6 +61,11 @@ export class MapComponent implements OnInit, OnDestroy {
 
     // Clean up graphics
     this.clearShapefileGraphics();
+
+    // Clean up sketch widget
+    if (this.sketchWidget) {
+      this.sketchWidget.destroy();
+    }
 
     // Destroy the map view
     if (this.view) {
@@ -70,60 +88,48 @@ export class MapComponent implements OnInit, OnDestroy {
   /**
    * Initializes the ArcGIS map and view
    */
-  private async initializeMap(): Promise<void> {
+  private async initializeMap() {
     try {
-      // Import ArcGIS modules dynamically
-      const [Map, MapView, GraphicsLayer, BasemapGallery, Expand] = await Promise.all([
-        import('@arcgis/core/Map.js'),
-        import('@arcgis/core/views/MapView.js'),
-        import('@arcgis/core/layers/GraphicsLayer.js'),
-        import('@arcgis/core/widgets/BasemapGallery.js'),
-        import('@arcgis/core/widgets/Expand.js')
-      ]);
 
       // Create a graphics layer for shapefiles
-      this.graphicsLayer = new GraphicsLayer.default({
+      this.graphicsLayer = new GraphicsLayer({
         title: 'Uploaded Shapefiles'
       });
 
       // Create the map
-      this.map = new Map.default({
+      this.map = new Map({
         basemap: 'topo-vector',
         layers: [this.graphicsLayer]
       });
-
       // Create the map view
-      this.view = new MapView.default({
+      this.view = new MapView({
         container: this.mapViewEl.nativeElement,
         map: this.map,
         center: [46.6753, 24.7136], // Center of Riyadh, Saudi Arabia
         zoom: 10
       });
 
-      // Add basemap gallery widget
-      const basemapGallery = new BasemapGallery.default({
-        view: this.view,
-        source: {
-          query: 'title:"World Topographic Map" OR title:"Imagery" OR title:"Streets" OR title:"Navigation"'
-        }
-      });
 
-      const bgExpand = new Expand.default({
-        view: this.view,
-        content: basemapGallery,
-        expandIcon: 'basemap'
-      });
 
-      // Add the expand widget to the view
-      this.view.ui.add(bgExpand, 'top-right');
-
-      console.log('Map initialized successfully');
+      console.log('Map and Sketch widget initialized successfully');
+      return this.view.when();
     } catch (error) {
       console.error('Error loading ArcGIS modules:', error);
       throw error;
     }
+
   }
 
+  private initializeSketchWidget() {
+    this.sketchWidget = new Sketch({
+      layer: this.graphicsLayer,
+      view: this.view,
+      creationMode: 'update'
+    });
+
+    // Add sketch widget to the view
+    this.view.ui.add(this.sketchWidget, 'top-right');
+  }
   /**
    * Handles file selection for shapefile upload
    * @param event - File input change event
@@ -281,6 +287,34 @@ export class MapComponent implements OnInit, OnDestroy {
    */
   getGraphicsCount(): number {
     return this.shapefileGraphics.length;
+  }
+
+
+  /**
+   * Toggles snapping on/off for precise editing
+   */
+  toggleSnapping(): void {
+    this.isSnappingEnabled = !this.isSnappingEnabled;
+
+    if (this.view && this.view.snappingOptions) {
+      this.view.snappingOptions.enabled = this.isSnappingEnabled;
+    }
+
+    if (this.sketchWidget && this.sketchWidget.snappingOptions) {
+      this.sketchWidget.snappingOptions.enabled = this.isSnappingEnabled;
+    }
+
+    const status = this.isSnappingEnabled ? 'enabled' : 'disabled';
+    this.uploadMessage = `<p style="color:blue">Snapping ${status} - ${this.isSnappingEnabled ? 'Precise editing active' : 'Free-form editing'}</p>`;
+
+    console.log(`Snapping ${status}`);
+  }
+
+  /**
+   * Gets the current snapping status
+   */
+  getSnappingStatus(): string {
+    return this.isSnappingEnabled ? 'Enabled' : 'Disabled';
   }
 
   /**

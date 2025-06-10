@@ -6,6 +6,7 @@ An Angular application featuring ArcGIS mapping capabilities with shapefile uplo
 
 - **Interactive ArcGIS Map**: Powered by ArcGIS JavaScript API with multiple basemap options
 - **Shapefile Upload**: Drag-and-drop or click-to-upload functionality for `.zip` files
+- **Advanced Sketch Widget**: Full interactive editing with vertex manipulation, scaling, rotation, movement, deletion, and precision snapping
 - **Line Splitting by Vertices**: Advanced feature to split line geometries into individual segments
 - **Graphics Management**: Toggle visibility and manage multiple uploaded graphics
 - **Custom Styling**: Automatic color coding for split line segments
@@ -50,6 +51,19 @@ An Angular application featuring ArcGIS mapping capabilities with shapefile uplo
 3. **File Validation**: The system validates file format and size (max 10MB)
 4. **Processing**: Files are processed and displayed on the map automatically
 
+### Sketch Widget (Interactive Editing)
+
+1. **Selection**: Click on graphics to select them (hold Ctrl for multiple selection)
+2. **Vertex Editing**: Drag individual vertices to reshape lines and polygons
+3. **Move Graphics**: Drag selected graphics to reposition them on the map
+4. **Scale/Resize**: Use corner handles to scale and resize graphics proportionally
+5. **Rotation**: Use rotation handles to rotate graphics around their center
+6. **Deletion**: Press Delete key to remove selected graphics
+7. **Precision Snapping**: Toggle snapping for precise vertex alignment with 15-pixel tolerance
+8. **Visual Highlighting**: Yellow highlights show snap candidates during editing
+9. **Undo/Redo**: Use Ctrl+Z for undo and Ctrl+Y for redo operations
+10. **Visual Feedback**: Real-time status updates for all editing operations
+
 ### Line Splitting by Vertices
 
 1. **Upload First**: Upload a shapefile containing line or polygon features
@@ -84,6 +98,8 @@ An Angular application featuring ArcGIS mapping capabilities with shapefile uplo
 ### Key Features
 
 - **Dynamic Module Loading**: ArcGIS modules are loaded on-demand for optimal performance
+- **Comprehensive Sketch Widget**: Advanced editing with vertex manipulation, scaling, rotation, movement, deletion, and precision snapping
+- **Precision Snapping & Highlighting**: 15-pixel tolerance snapping with yellow highlight feedback for accurate editing
 - **Advanced Geometry Processing**: Split line features by vertices with proper attribute preservation
 - **Memory Management**: Proper cleanup of map resources and subscriptions
 - **Error Boundaries**: Comprehensive error handling throughout the application
@@ -158,8 +174,9 @@ ng lint
 
 ✅ **Angular Application Created**: New project with routing and SSR enabled  
 ✅ **Map Component Generated**: Fully functional component with ArcGIS integration  
-✅ **Upload Service Implemented**: Complete shapefile handling service  
-✅ **Service Integration**: Map component successfully uses the upload service  
+✅ **Upload Service Implemented**: Complete shapefile handling and line splitting service  
+✅ **Advanced Sketch Widget**: Full editing with vertex manipulation, scaling, rotation, movement, deletion, and precision snapping  
+✅ **Service Integration**: Map component successfully uses all services  
 ✅ **Error-Free Operation**: All functionality working without errors  
 ✅ **Modern UI**: Beautiful, responsive design with drag-and-drop support  
 ✅ **Code Documentation**: Comprehensive comments and documentation
