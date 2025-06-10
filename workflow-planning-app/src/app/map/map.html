@@ -72,11 +72,6 @@
       <button class="split-btn" (click)="splitLinesByVertices()" [disabled]="getGraphicsCount() === 0 || isProcessing">
         Split Lines by Vertices
       </button>
-
-      <button class="snapping-btn" (click)="toggleSnapping()" [class.enabled]="isSnappingEnabled">
-        <span class="snapping-icon">🧲</span>
-        Snapping: {{ getSnappingStatus() }}
-      </button>
     </div>
   </div>
 

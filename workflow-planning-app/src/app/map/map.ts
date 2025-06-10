@@ -42,15 +42,11 @@ export class MapComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     try {
-      this.initializeMap().then(() => {
-        this.initializeSketchWidget();
-        this.subscribeToUploadStatus();
-      }).catch((error) => {
-        console.error('Error initializing map:', error);
-        this.uploadMessage = 'Failed to initialize map';
-      });
-    } catch (error) {
-      console.error('Error initializing map:', error);
+      await this.initializeMap();
+      this.initializeSketchWidget();
+      this.subscribeToUploadStatus();
+    } catch (err) {
+      console.error('Error initializing map', err);
       this.uploadMessage = 'Failed to initialize map';
     }
   }
@@ -289,33 +285,6 @@ export class MapComponent implements OnInit, OnDestroy {
     return this.shapefileGraphics.length;
   }
 
-
-  /**
-   * Toggles snapping on/off for precise editing
-   */
-  toggleSnapping(): void {
-    this.isSnappingEnabled = !this.isSnappingEnabled;
-
-    if (this.view && this.view.snappingOptions) {
-      this.view.snappingOptions.enabled = this.isSnappingEnabled;
-    }
-
-    if (this.sketchWidget && this.sketchWidget.snappingOptions) {
-      this.sketchWidget.snappingOptions.enabled = this.isSnappingEnabled;
-    }
-
-    const status = this.isSnappingEnabled ? 'enabled' : 'disabled';
-    this.uploadMessage = `<p style="color:blue">Snapping ${status} - ${this.isSnappingEnabled ? 'Precise editing active' : 'Free-form editing'}</p>`;
-
-    console.log(`Snapping ${status}`);
-  }
-
-  /**
-   * Gets the current snapping status
-   */
-  getSnappingStatus(): string {
-    return this.isSnappingEnabled ? 'Enabled' : 'Disabled';
-  }
 
   /**
    * Splits line features by vertices using the upload service
