@@ -426,3 +426,72 @@
     border-color: #000;
   }
 }
+
+/* Auto-Cut Button */
+.auto-cut-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  text-transform: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.auto-cut-btn small {
+  display: block;
+  font-size: 11px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.auto-cut-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.auto-cut-btn:hover::before {
+  left: 100%;
+}
+
+.auto-cut-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+
+.auto-cut-btn.active {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  animation: auto-cut-pulse 2s ease-in-out infinite alternate;
+}
+
+.auto-cut-btn.active:hover {
+  background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+}
+
+.auto-cut-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes auto-cut-pulse {
+  0% { box-shadow: 0 0 8px rgba(40, 167, 69, 0.4); }
+  50% { box-shadow: 0 0 16px rgba(40, 167, 69, 0.7); }
+  100% { box-shadow: 0 0 8px rgba(40, 167, 69, 0.4); }
+}
