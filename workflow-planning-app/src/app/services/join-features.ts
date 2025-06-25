@@ -42,13 +42,13 @@ export class JoinFeaturesService {
     try {
       const joinedPolyline = this.createJoinedPolyline(extractedPolylinesGeometries);
       this.validateJoinedPolyline(joinedPolyline);
-      const joinedGraphic = new Graphic({geometry: joinedPolyline});
+      const joinedGraphic = new Graphic({geometry: joinedPolyline,});
       return joinedGraphic;
     } catch (error) {
       throw error;
     }
   };
-  async processPathBasedOnLength(originGraphic: any,layer: GraphicsLayer) {
+  async processPathBasedOnLength(originGraphic: any,layer: GraphicsLayer,innerGraphicsContainer:any[]) : Promise<void> {
     try {
  
       const drawnGraphicGeometry: Polyline = originGraphic.geometry;
@@ -180,6 +180,7 @@ export class JoinFeaturesService {
               }
             });
             layer.add(segmentGraphic);
+            innerGraphicsContainer.push(segmentGraphic);
           });
         });
 
@@ -194,6 +195,7 @@ export class JoinFeaturesService {
           }),
         });
         layer.add(graphic);
+        innerGraphicsContainer.push(graphic);
       }
     } catch (error) {
       console.error('Error in processPathBasedOnLength:', error);

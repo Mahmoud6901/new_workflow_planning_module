@@ -63,7 +63,7 @@ export class MapComponent implements OnInit, OnDestroy {
     try {
       await this.initializeMap();
       this.initializeSketchWidget();
-      this.initializeMeasurementWidget();
+      // this.initializeMeasurementWidget();
       this.subscribeToUploadStatus();
     } catch (err) {
       console.error('Error initializing map', err);
@@ -162,7 +162,7 @@ export class MapComponent implements OnInit, OnDestroy {
     });
     
     this.sketchWidget.on("update", (event) => {
-      this.setGraphicsToBeJoinedCount(this.sketchWidget.updateGraphics.toArray());
+      this.setGraphicsToBeJoined(this.sketchWidget.updateGraphics.toArray());
       console.log('sketch widget update graphics:',this.getGraphicsToBeJoinedCount());
     });
   
@@ -247,7 +247,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.clearSelection();
 
     // Store the selected graphic and its original symbol
-    this.selectedGraphic = graphic; 
+    this.selectedGraphic = graphic;
     this.originalSymbol = graphic.symbol;
 
     // Create highlight symbol
@@ -260,7 +260,7 @@ export class MapComponent implements OnInit, OnDestroy {
     });
 
     // Apply highlight symbol
-    graphic.symbol = highlightSymbol;
+    graphic.highlight = highlightSymbol;
 
     // Update UI message
     this.uploadMessage = '<p style="color:green"><b>✅ Line Selected!</b><br/>Now draw a cutting line that intersects the highlighted line to perform the cut.</p>';
@@ -619,11 +619,12 @@ export class MapComponent implements OnInit, OnDestroy {
 
   async joinLines():Promise<void>{
     try {
-      const joinedPolyline = await this.joinService.joinSelectedPolylines(this.selectedGraphicsToBeJoined);
-      this.joinService.processPathBasedOnLength(joinedPolyline,this.graphicsLayer);
+      const joinedPolylineGraphic = await this.joinService.joinSelectedPolylines(this.selectedGraphicsToBeJoined);
+      this.joinService.processPathBasedOnLength(joinedPolylineGraphic,this.graphicsLayer,this.shapefileGraphics);
       this.graphicsLayer.removeMany(this.selectedGraphicsToBeJoined);
+      this.setGraphicsToBeJoined([]);
       this.uploadMessage = `<p style="color:green"><b>Lines successfully joined!</b><br/>
-      Created ${this.selectedGraphicsToBeJoined.length} line segments with unique colors for easy identification.</p>`;
+        Created ${this.selectedGraphicsToBeJoined.length} line segments with unique colors for easy identification.</p>`;
     } catch (error) {
       console.error('Error joining lines:', error);
       this.sketchWidget.cancel();
@@ -635,7 +636,7 @@ export class MapComponent implements OnInit, OnDestroy {
     return this.selectedGraphicsToBeJoined.length;
   }
 
-  setGraphicsToBeJoinedCount(graphics:Graphic[]):void{
+  setGraphicsToBeJoined(graphics:Graphic[]):void{
     this.selectedGraphicsToBeJoined = graphics;
   }
 }
