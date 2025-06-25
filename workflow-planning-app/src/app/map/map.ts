@@ -10,6 +10,7 @@ import Graphic from '@arcgis/core/Graphic';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import { Point } from '@arcgis/core/geometry';
+import Measurement from "@arcgis/core/widgets/Measurement.js";
 
 @Component({
   selector: 'app-map',
@@ -30,6 +31,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private sketchWidget: any;
   private shapefileGraphics: any[] = [];
   private subscriptions: Subscription[] = [];
+  private measurementWidget: any;
 
   // Upload state
   isUploading = false;
@@ -49,6 +51,8 @@ export class MapComponent implements OnInit, OnDestroy {
     [100, 100, 255, 0.9]  // Light blue for second piece
   ];
 
+  _clickHandle: any;
+
   constructor() {
     this.supportedFormats = this.uploadShapefileService.getSupportedFormats();
   }
@@ -57,6 +61,7 @@ export class MapComponent implements OnInit, OnDestroy {
     try {
       await this.initializeMap();
       this.initializeSketchWidget();
+      this.initializeMeasurementWidget();
       this.subscribeToUploadStatus();
     } catch (err) {
       console.error('Error initializing map', err);
@@ -79,9 +84,17 @@ export class MapComponent implements OnInit, OnDestroy {
       this.sketchWidget.destroy();
     }
 
+    // Clean up measurement widget
+    if (this.measurementWidget) {
+      this.measurementWidget.destroy();
+    }
+
     // Destroy the map view
     if (this.view) {
       this.view.destroy();
+    }
+    if (this._clickHandle) {
+      this._clickHandle.remove();
     }
   }
 
@@ -147,7 +160,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.view.ui.add(this.sketchWidget, 'top-right');
 
     // Add click event handler for line selection when auto-cut is enabled
-    this.view.on('click', (event: any) => {
+    this._clickHandle = this.view.on('click', (event: any) => {
       if (this.isAutoCuttingEnabled) {
         this.handleMapClick(event);
       }
@@ -159,6 +172,20 @@ export class MapComponent implements OnInit, OnDestroy {
         await this.performSelectedLineCut(event.graphic);
       }
     });
+  }
+
+  private initializeMeasurementWidget() {
+    this.measurementWidget = new Measurement({
+      view: this.view,
+      activeTool: 'distance', // Start with no active tool
+      linearUnit: "meters",
+      areaUnit: "square-meters"
+    });
+
+    // Add measurement widget to the view
+    this.view.ui.add(this.measurementWidget, 'bottom-right');
+
+    console.log('Measurement widget initialized successfully');
   }
 
   /**
