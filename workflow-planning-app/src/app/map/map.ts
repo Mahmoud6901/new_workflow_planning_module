@@ -6,6 +6,9 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import Sketch from "@arcgis/core/widgets/Sketch.js";
 import Map from '@arcgis/core/Map';
+import { JoinFeaturesService } from '../services/join-features';
+import Graphic from '@arcgis/core/Graphic';
+
 
 @Component({
   selector: 'app-map',
@@ -23,9 +26,10 @@ export class MapComponent implements OnInit, OnDestroy {
   private map: any;
   private view: any;
   private graphicsLayer: any;
-  private sketchWidget: any;
+  private sketchWidget!: Sketch;
   private shapefileGraphics: any[] = [];
   private subscriptions: Subscription[] = [];
+  private selectedGraphicsToBeJoined:Graphic[] = [];
 
   // Upload state
   isUploading = false;
@@ -36,7 +40,7 @@ export class MapComponent implements OnInit, OnDestroy {
   // Snapping state
   isSnappingEnabled = true;
 
-  constructor() {
+  constructor(private joinService:JoinFeaturesService) {
     this.supportedFormats = this.uploadShapefileService.getSupportedFormats();
   }
 
@@ -89,7 +93,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
       // Create a graphics layer for shapefiles
       this.graphicsLayer = new GraphicsLayer({
-        title: 'Uploaded Shapefiles'
+        title: 'Uploaded Shapefiles',
       });
 
       // Create the map
@@ -105,10 +109,8 @@ export class MapComponent implements OnInit, OnDestroy {
         zoom: 10
       });
 
-
-
-      console.log('Map and Sketch widget initialized successfully');
       return this.view.when();
+    
     } catch (error) {
       console.error('Error loading ArcGIS modules:', error);
       throw error;
@@ -120,11 +122,33 @@ export class MapComponent implements OnInit, OnDestroy {
     this.sketchWidget = new Sketch({
       layer: this.graphicsLayer,
       view: this.view,
-      creationMode: 'update'
+      creationMode: "update",                                 
+      availableCreateTools: [],                            
+      visibleElements: {
+        createTools: {
+          point: false,
+          polyline: false,
+          polygon: false,
+          rectangle: false,
+          circle: false,
+          freehandPolyline: false,
+          freehandPolygon: false
+        },
+        selectionTools: {
+          "rectangle-selection": true,
+          "lasso-selection": true
+        },
+        settingsMenu: false,
+        undoRedoMenu: false
+      },                                                      
     });
-
-    // Add sketch widget to the view
-    this.view.ui.add(this.sketchWidget, 'top-right');
+    
+    this.sketchWidget.on("update", (event) => {
+      this.setGraphicsToBeJoinedCount(this.sketchWidget.updateGraphics.toArray());
+      console.log('sketch widget update graphics:',this.getGraphicsToBeJoinedCount());
+    });
+  
+    this.view.ui.add(this.sketchWidget, "top-right");
   }
   /**
    * Handles file selection for shapefile upload
@@ -285,7 +309,6 @@ export class MapComponent implements OnInit, OnDestroy {
     return this.shapefileGraphics.length;
   }
 
-
   /**
    * Splits line features by vertices using the upload service
    */
@@ -301,7 +324,7 @@ export class MapComponent implements OnInit, OnDestroy {
       // Use the service to split lines by vertices with styling
       const segmentedGraphics = await this.uploadShapefileService.splitLineByVerticesWithStyling(
         this.shapefileGraphics,
-        true // Apply custom styling
+        false // Apply custom styling
       );
 
       if (segmentedGraphics && segmentedGraphics.length > 0) {
@@ -317,6 +340,9 @@ export class MapComponent implements OnInit, OnDestroy {
         // Zoom to the segmented graphics extent
         await this.zoomToGraphics(segmentedGraphics);
 
+        await this.sketchWidget.update(segmentedGraphics);
+        this.sketchWidget.cancel();
+
         this.uploadMessage = `<p style="color:green"><b>Lines successfully split!</b><br/>
         Created ${segmentedGraphics.length} line segments with unique colors for easy identification.</p>`;
 
@@ -330,5 +356,27 @@ export class MapComponent implements OnInit, OnDestroy {
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  async joinLines():Promise<void>{
+    try {
+      const joinedPolyline = await this.joinService.joinSelectedPolylines(this.selectedGraphicsToBeJoined);
+      this.joinService.processPathBasedOnLength(joinedPolyline,this.graphicsLayer);
+      this.graphicsLayer.removeMany(this.selectedGraphicsToBeJoined);
+      this.uploadMessage = `<p style="color:green"><b>Lines successfully joined!</b><br/>
+      Created ${this.selectedGraphicsToBeJoined.length} line segments with unique colors for easy identification.</p>`;
+    } catch (error) {
+      console.error('Error joining lines:', error);
+      this.sketchWidget.cancel();
+      this.uploadMessage = `<p style="color:red">Error joining lines: ${error}</p>`;
+    }
+  }
+
+  getGraphicsToBeJoinedCount():number{
+    return this.selectedGraphicsToBeJoined.length;
+  }
+
+  setGraphicsToBeJoinedCount(graphics:Graphic[]):void{
+    this.selectedGraphicsToBeJoined = graphics;
   }
 }

@@ -47,30 +47,15 @@
     <div class="layer-section" *ngIf="getGraphicsCount() > 0">
       <h4>Uploaded Graphics ({{ getGraphicsCount() }})</h4>
 
-      <div class="layer-list">
-        <div *ngFor="let graphicInfo of getGraphicsInfo()" class="layer-item">
-          <div class="layer-info">
-            <span class="layer-title">{{ graphicInfo.title }}</span>
-            <span class="layer-status loaded">
-              {{ graphicInfo.type | titlecase }} geometry
-            </span>
-          </div>
-
-          <div class="layer-controls">
-            <button class="toggle-btn" (click)="toggleGraphicVisibility(graphicInfo.id)"
-              [class.visible]="graphicInfo.visible">
-              {{ graphicInfo.visible ? '👁️' : '👁️‍🗨️' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <button class="clear-btn" (click)="clearShapefileGraphics()">
         Clear All Graphics
       </button>
 
       <button class="split-btn" (click)="splitLinesByVertices()" [disabled]="getGraphicsCount() === 0 || isProcessing">
         Split Lines by Vertices
+      </button>
+      <button class="split-btn" (click)="joinLines()" [disabled]="getGraphicsToBeJoinedCount() < 2 || isProcessing">
+        Join Lines
       </button>
     </div>
   </div>
