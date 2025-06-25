@@ -33,7 +33,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private shapefileGraphics: any[] = [];
   private subscriptions: Subscription[] = [];
   private measurementWidget: any;
-  private selectedGraphicsToBeJoined:Graphic[] = [];
+  private selectedGraphicsToBeJoined: Graphic[] = [];
 
   // Upload state
   isUploading = false;
@@ -54,8 +54,9 @@ export class MapComponent implements OnInit, OnDestroy {
   ];
 
   _clickHandle: any;
+  enableCutting: boolean = false;
 
-  constructor(private joinService:JoinFeaturesService) {
+  constructor(private joinService: JoinFeaturesService) {
     this.supportedFormats = this.uploadShapefileService.getSupportedFormats();
   }
 
@@ -137,7 +138,7 @@ export class MapComponent implements OnInit, OnDestroy {
       });
 
       return this.view.when();
-    
+
     } catch (error) {
       console.error('Error loading ArcGIS modules:', error);
       throw error;
@@ -149,8 +150,8 @@ export class MapComponent implements OnInit, OnDestroy {
     this.sketchWidget = new Sketch({
       layer: this.graphicsLayer,
       view: this.view,
-      creationMode: "update",                                 
-      availableCreateTools: ['polyline'],                            
+      creationMode: "update",
+      availableCreateTools: ['polyline'],
       visibleElements: {
         selectionTools: {
           "rectangle-selection": true,
@@ -158,14 +159,14 @@ export class MapComponent implements OnInit, OnDestroy {
         },
         settingsMenu: false,
         undoRedoMenu: false
-      },                                                      
+      },
     });
-    
+
     this.sketchWidget.on("update", (event) => {
       this.setGraphicsToBeJoined(this.sketchWidget.updateGraphics.toArray());
-      console.log('sketch widget update graphics:',this.getGraphicsToBeJoinedCount());
+      console.log('sketch widget update graphics:', this.getGraphicsToBeJoinedCount());
     });
-  
+
 
 
     // Add click event handler for line selection when auto-cut is enabled
@@ -318,7 +319,7 @@ export class MapComponent implements OnInit, OnDestroy {
             symbol: new SimpleLineSymbol({
               color: color,
               width: 4,
-              style: 'solid',
+              style: 'dot',
               cap: 'round',
               join: 'round'
             }),
@@ -412,6 +413,8 @@ export class MapComponent implements OnInit, OnDestroy {
     const file = event.target.files[0];
     if (file) {
       this.uploadShapefile(file);
+      // Reset the input value to allow re-selecting the same file
+      event.target.value = '';
     }
   }
 
@@ -470,6 +473,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
         this.uploadMessage = `<p style="color:green"><b>Successfully uploaded ${file.name}</b><br/>Added ${graphics.length} features to the map.</p>`;
         console.log('Successfully added graphics to map:', graphics.length);
+        this.splitLinesByVertices();
       } else {
         this.uploadMessage = `<p style="color:orange">No valid features found in ${file.name}</p>`;
       }
@@ -617,10 +621,12 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
-  async joinLines():Promise<void>{
+  async joinLines(): Promise<void> {
     try {
       const joinedPolylineGraphic = await this.joinService.joinSelectedPolylines(this.selectedGraphicsToBeJoined);
-      this.joinService.processPathBasedOnLength(joinedPolylineGraphic,this.graphicsLayer,this.shapefileGraphics);
+      this.joinService.processPathBasedOnLength(joinedPolylineGraphic, this.graphicsLayer, this.shapefileGraphics).then(() => {
+        this.enableCutting = true;
+      })
       this.graphicsLayer.removeMany(this.selectedGraphicsToBeJoined);
       this.setGraphicsToBeJoined([]);
       this.uploadMessage = `<p style="color:green"><b>Lines successfully joined!</b><br/>
@@ -632,11 +638,11 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
-  getGraphicsToBeJoinedCount():number{
+  getGraphicsToBeJoinedCount(): number {
     return this.selectedGraphicsToBeJoined.length;
   }
 
-  setGraphicsToBeJoined(graphics:Graphic[]):void{
+  setGraphicsToBeJoined(graphics: Graphic[]): void {
     this.selectedGraphicsToBeJoined = graphics;
   }
 }

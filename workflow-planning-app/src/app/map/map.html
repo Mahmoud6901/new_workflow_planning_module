@@ -50,18 +50,18 @@
       <button class="clear-btn" (click)="clearShapefileGraphics()">
         Clear All Graphics
       </button>
-
+      <!--
       <button class="split-btn" (click)="splitLinesByVertices()" [disabled]="getGraphicsCount() === 0 || isProcessing">
         Split Lines by Vertices
-      </button>
+      </button> -->
       <button class="split-btn" (click)="joinLines()" [disabled]="getGraphicsToBeJoinedCount() < 2 || isProcessing">
         Join Lines
       </button>
 
       <!-- Selection-Based Cutting Toggle -->
       <button class="auto-cut-btn" (click)="toggleAutoCuttingMode()" [class.active]="isAutoCuttingEnabled"
-        [disabled]="getPolylineCount() === 0 || isProcessing">
-        {{ isAutoCuttingEnabled ? '🎯 Selection Cut ON' : '✂️ Enable Selection Cut' }}
+        [disabled]="getPolylineCount() === 0 || isProcessing || enableCutting === false">
+        {{ isAutoCuttingEnabled ? 'Selection Cut ON' : 'Enable Selection Cut' }}
         <small *ngIf="getPolylineCount() > 0">({{ getPolylineCount() }} polylines available)</small>
       </button>
     </div>
