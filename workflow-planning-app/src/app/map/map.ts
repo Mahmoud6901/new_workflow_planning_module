@@ -253,15 +253,15 @@ export class MapComponent implements OnInit, OnDestroy {
 
     // Create highlight symbol
     const highlightSymbol = new SimpleLineSymbol({
-      color: [255, 255, 0, 0.8], // Yellow highlight
-      width: 6,
+      color: '#00FFFF',
+      width: 1.5,
       style: 'solid',
       cap: 'round',
       join: 'round'
     });
 
     // Apply highlight symbol
-    graphic.highlight = highlightSymbol;
+    graphic.symbol = highlightSymbol;
 
     // Update UI message
     this.uploadMessage = '<p style="color:green"><b>✅ Line Selected!</b><br/>Now draw a cutting line that intersects the highlighted line to perform the cut.</p>';
