@@ -150,17 +150,8 @@ export class MapComponent implements OnInit, OnDestroy {
       layer: this.graphicsLayer,
       view: this.view,
       creationMode: "update",                                 
-      availableCreateTools: [],                            
+      availableCreateTools: ['polyline'],                            
       visibleElements: {
-        createTools: {
-          point: false,
-          polyline: false,
-          polygon: false,
-          rectangle: false,
-          circle: false,
-          freehandPolyline: false,
-          freehandPolygon: false
-        },
         selectionTools: {
           "rectangle-selection": true,
           "lasso-selection": true
@@ -175,7 +166,7 @@ export class MapComponent implements OnInit, OnDestroy {
       console.log('sketch widget update graphics:',this.getGraphicsToBeJoinedCount());
     });
   
-    this.view.ui.add(this.sketchWidget, "top-right");
+
 
     // Add click event handler for line selection when auto-cut is enabled
     this._clickHandle = this.view.on('click', (event: any) => {
@@ -190,6 +181,8 @@ export class MapComponent implements OnInit, OnDestroy {
         await this.performSelectedLineCut(event.graphic);
       }
     });
+
+    this.view.ui.add(this.sketchWidget, "top-right");
   }
 
   private initializeMeasurementWidget() {
@@ -254,7 +247,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.clearSelection();
 
     // Store the selected graphic and its original symbol
-    this.selectedGraphic = graphic;
+    this.selectedGraphic = graphic; 
     this.originalSymbol = graphic.symbol;
 
     // Create highlight symbol
