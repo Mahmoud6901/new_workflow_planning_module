@@ -57,27 +57,12 @@
       <button class="split-btn" (click)="joinLines()" [disabled]="getGraphicsToBeJoinedCount() < 2 || isProcessing">
         Join Lines
       </button>
+
+      <!-- Selection-Based Cutting Toggle -->
+      <button class="auto-cut-btn" (click)="toggleAutoCuttingMode()" [class.active]="isAutoCuttingEnabled"
+        [disabled]="getPolylineCount() === 0 || isProcessing">
+        {{ isAutoCuttingEnabled ? '🎯 Selection Cut ON' : '✂️ Enable Selection Cut' }}
+        <small *ngIf="getPolylineCount() > 0">({{ getPolylineCount() }} polylines available)</small>
+      </button>
     </div>
   </div>
-
-  <!-- Instructions -->
-  <div class="instructions" *ngIf="getGraphicsCount() === 0 && !uploadMessage">
-    <h4>How to use:</h4>
-    <ol>
-      <li>Upload a zipped shapefile (.zip)</li>
-      <li>The shapefile will be displayed on the map</li>
-      <li>Use the sketch widget (top-left) for full editing capabilities:</li>
-      <li style="margin-left: 20px;">• Click to select graphics (hold Ctrl for multiple selection)</li>
-      <li style="margin-left: 20px;">• Drag vertices to reshape lines and polygons</li>
-      <li style="margin-left: 20px;">• Drag graphics to move them</li>
-      <li style="margin-left: 20px;">• Use corner handles to scale/resize graphics</li>
-      <li style="margin-left: 20px;">• Use rotation handle to rotate graphics</li>
-      <li style="margin-left: 20px;">• Press Delete key to remove selected graphics</li>
-      <li style="margin-left: 20px;">• Use snapping for precise vertex alignment (toggle snapping button)</li>
-      <li>Use Ctrl+Z for undo and Ctrl+Y for redo operations</li>
-      <li>Use the basemap gallery (top-right) to change the background map</li>
-      <li>Toggle snapping for precise editing with yellow highlight feedback</li>
-      <li>Split lines by vertices or manage graphics using the controls</li>
-    </ol>
-  </div>
-</div>
