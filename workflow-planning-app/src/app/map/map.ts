@@ -11,6 +11,7 @@ import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import Measurement from "@arcgis/core/widgets/Measurement.js";
 import { JoinFeaturesService } from '../services/join-features';
+import Polyline from '@arcgis/core/geometry/Polyline';
 
 
 @Component({
@@ -470,10 +471,34 @@ export class MapComponent implements OnInit, OnDestroy {
 
         // Zoom to the graphics extent
         await this.zoomToGraphics(graphics);
-
         this.uploadMessage = `<p style="color:green"><b>Successfully uploaded ${file.name}</b><br/>Added ${graphics.length} features to the map.</p>`;
         console.log('Successfully added graphics to map:', graphics.length);
-        this.splitLinesByVertices();
+        await this.splitLinesByVertices();
+        const graphicsasPolylines = this.joinService.extractPolylineGeometries(this.shapefileGraphics);
+        const unionedGraphics = geometryEngine.union(graphicsasPolylines) as Polyline;
+
+        // Ensure graphics layer is added to map
+        if (!this.map.layers.includes(this.graphicsLayer)) {
+            this.map.add(this.graphicsLayer);
+        }
+
+        const unionGraphics = unionedGraphics.paths.map(path =>
+            new Graphic({
+                geometry: new Polyline({
+                    paths: [path],
+                    spatialReference: this.view.spatialReference // Use map's SR
+                }),
+            })
+
+        );
+
+        this.graphicsLayer.removeAll();
+        this.shapefileGraphics = unionGraphics;
+        this.graphicsLayer.addMany(unionGraphics);
+
+        this.uploadMessage = `<p style="color:green"><b>Successfully joined ${graphics.length} into ${this.shapefileGraphics.length} connected lines</b></p>`;
+        console.log('Successfully added graphics to map:', this.shapefileGraphics.length);
+
       } else {
         this.uploadMessage = `<p style="color:orange">No valid features found in ${file.name}</p>`;
       }
@@ -628,6 +653,8 @@ export class MapComponent implements OnInit, OnDestroy {
         this.enableCutting = true;
       })
       this.graphicsLayer.removeMany(this.selectedGraphicsToBeJoined);
+      const newShapefileGraphics = this.shapefileGraphics.filter(g => !this.selectedGraphicsToBeJoined.includes(g));
+      this.shapefileGraphics = newShapefileGraphics;
       this.setGraphicsToBeJoined([]);
       this.uploadMessage = `<p style="color:green"><b>Lines successfully joined!</b><br/>
         Created ${this.selectedGraphicsToBeJoined.length} line segments with unique colors for easy identification.</p>`;
@@ -635,6 +662,18 @@ export class MapComponent implements OnInit, OnDestroy {
       console.error('Error joining lines:', error);
       this.sketchWidget.cancel();
       this.uploadMessage = `<p style="color:red">Error joining lines: ${error}</p>`;
+    }
+  }
+
+  async segementLines(): Promise<void> {
+    try {
+      this.selectedGraphicsToBeJoined.map(async(graphic: Graphic) => {
+        await this.joinService.processPathBasedOnLength(graphic, this.graphicsLayer, this.shapefileGraphics);
+        this.graphicsLayer.remove(graphic);
+      })
+    }catch (error) {
+      console.error('Error segmenting lines:', error);
+      this.uploadMessage = `<p style="color:red">Error segmenting lines: ${error}</p>`;
     }
   }
 

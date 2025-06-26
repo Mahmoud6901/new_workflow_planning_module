@@ -58,6 +58,10 @@
         Join Lines
       </button>
 
+      <button class="split-btn" (click)="segementLines()" [disabled]="getGraphicsToBeJoinedCount() < 1 || isProcessing">
+        Segment Lines
+      </button>
+
       <!-- Selection-Based Cutting Toggle -->
       <button class="auto-cut-btn" (click)="toggleAutoCuttingMode()" [class.active]="isAutoCuttingEnabled"
         [disabled]="getPolylineCount() === 0 || isProcessing || enableCutting === false">

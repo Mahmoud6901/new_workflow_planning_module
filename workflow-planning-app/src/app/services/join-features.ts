@@ -208,12 +208,12 @@ export class JoinFeaturesService {
     }
     return { isValid: true };
   }
-  private extractPolylineGeometries(features: Graphic[]): Polyline[] {
+  extractPolylineGeometries(features: Graphic[]): Polyline[] {
     return features
       .map(f => f.geometry)
       .filter(g => g != null && g.type === "polyline");
   }
-  private createJoinedPolyline(polylineGeometries: Polyline[]) {
+  createJoinedPolyline(polylineGeometries: Polyline[]) {
     const normalizedPolylineGeometries = polylineGeometries.map(polyline => {
       return new Polyline({
         paths: polyline.paths,
