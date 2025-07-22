@@ -9,6 +9,9 @@ import Map from '@arcgis/core/Map';
 import Graphic from '@arcgis/core/Graphic';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import Font from '@arcgis/core/symbols/Font';
+import Point from '@arcgis/core/geometry/Point';
 import Measurement from "@arcgis/core/widgets/Measurement.js";
 import { JoinFeaturesService } from '../services/join-features';
 import Polyline from '@arcgis/core/geometry/Polyline';
@@ -35,6 +38,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
   private measurementWidget: any;
   private selectedGraphicsToBeJoined: Graphic[] = [];
+  private labelGraphics: Graphic[] = []; // Track label graphics separately
 
   // Upload state
   isUploading = false;
@@ -80,7 +84,8 @@ export class MapComponent implements OnInit, OnDestroy {
     // Clear selection
     this.clearSelection();
 
-    // Clean up graphics
+    // Clean up graphics and labels
+    this.clearLengthLabels();
     this.clearShapefileGraphics();
 
     // Clean up sketch widget
@@ -356,6 +361,9 @@ export class MapComponent implements OnInit, OnDestroy {
         // Clear selection
         this.clearSelection();
 
+        // Add length labels for the new cut pieces
+        this.addLengthLabels();
+
         this.uploadMessage = `<p style="color:green"><b>✂️ Cut Successful!</b><br/>
         The selected line has been cut into <span style="color:red;">red</span> and <span style="color:blue;">blue</span> pieces.<br/>
         Click on another polyline to continue cutting or disable auto-cut mode.</p>`;
@@ -479,22 +487,25 @@ export class MapComponent implements OnInit, OnDestroy {
 
         // Ensure graphics layer is added to map
         if (!this.map.layers.includes(this.graphicsLayer)) {
-            this.map.add(this.graphicsLayer);
+          this.map.add(this.graphicsLayer);
         }
 
         const unionGraphics = unionedGraphics.paths.map(path =>
-            new Graphic({
-                geometry: new Polyline({
-                    paths: [path],
-                    spatialReference: this.view.spatialReference // Use map's SR
-                }),
-            })
+          new Graphic({
+            geometry: new Polyline({
+              paths: [path],
+              spatialReference: this.view.spatialReference // Use map's SR
+            }),
+          })
 
         );
 
         this.graphicsLayer.removeAll();
         this.shapefileGraphics = unionGraphics;
         this.graphicsLayer.addMany(unionGraphics);
+
+        // Add length labels after graphics are processed
+        this.addLengthLabels();
 
         this.uploadMessage = `<p style="color:green"><b>Successfully joined ${graphics.length} into ${this.shapefileGraphics.length} connected lines</b></p>`;
         console.log('Successfully added graphics to map:', this.shapefileGraphics.length);
@@ -554,6 +565,9 @@ export class MapComponent implements OnInit, OnDestroy {
   clearShapefileGraphics(): void {
     // Clear selection first
     this.clearSelection();
+
+    // Clear length labels
+    this.clearLengthLabels();
 
     if (this.graphicsLayer) {
       this.graphicsLayer.removeAll();
@@ -631,6 +645,9 @@ export class MapComponent implements OnInit, OnDestroy {
         await this.sketchWidget.update(segmentedGraphics);
         this.sketchWidget.cancel();
 
+        // Add length labels after segmentation
+        this.addLengthLabels();
+
         this.uploadMessage = `<p style="color:green"><b>Lines successfully split!</b><br/>
         Created ${segmentedGraphics.length} line segments with unique colors for easy identification.</p>`;
 
@@ -656,6 +673,10 @@ export class MapComponent implements OnInit, OnDestroy {
       const newShapefileGraphics = this.shapefileGraphics.filter(g => !this.selectedGraphicsToBeJoined.includes(g));
       this.shapefileGraphics = newShapefileGraphics;
       this.setGraphicsToBeJoined([]);
+
+      // Add length labels after joining
+      this.addLengthLabels();
+
       this.uploadMessage = `<p style="color:green"><b>Lines successfully joined!</b><br/>
         Created ${this.selectedGraphicsToBeJoined.length} line segments with unique colors for easy identification.</p>`;
     } catch (error) {
@@ -667,11 +688,11 @@ export class MapComponent implements OnInit, OnDestroy {
 
   async segementLines(): Promise<void> {
     try {
-      this.selectedGraphicsToBeJoined.map(async(graphic: Graphic) => {
+      this.selectedGraphicsToBeJoined.map(async (graphic: Graphic) => {
         await this.joinService.processPathBasedOnLength(graphic, this.graphicsLayer, this.shapefileGraphics);
         this.graphicsLayer.remove(graphic);
       })
-    }catch (error) {
+    } catch (error) {
       console.error('Error segmenting lines:', error);
       this.uploadMessage = `<p style="color:red">Error segmenting lines: ${error}</p>`;
     }
@@ -683,5 +704,121 @@ export class MapComponent implements OnInit, OnDestroy {
 
   setGraphicsToBeJoined(graphics: Graphic[]): void {
     this.selectedGraphicsToBeJoined = graphics;
+  }
+
+  /**
+   * Creates and adds length labels for all line graphics
+   */
+  private addLengthLabels(): void {
+    // Clear existing labels first
+    this.clearLengthLabels();
+
+    const labelGraphics: Graphic[] = [];
+
+    this.shapefileGraphics.forEach((graphic, index) => {
+      if (graphic.geometry?.type === 'polyline') {
+        try {
+          // Calculate the length of the line in meters
+          const lengthMeters = geometryEngine.geodesicLength(graphic.geometry, 'meters');
+
+          // Format the length based on magnitude
+          let lengthText: string;
+          if (lengthMeters >= 1000) {
+            lengthText = `${(lengthMeters / 1000).toFixed(2)} km`;
+          } else {
+            lengthText = `${lengthMeters.toFixed(1)} m`;
+          }
+
+          // Get the midpoint of the line for label placement
+          const midpoint = this.getLineMidpoint(graphic.geometry);
+
+          if (midpoint) {
+            // Create text symbol for the length label
+            const textSymbol = new TextSymbol({
+              text: lengthText,
+              color: '#2C3E50',
+              backgroundColor: [255, 255, 255, 0.9],
+              borderLineColor: '#34495E',
+              borderLineSize: 1,
+              font: new Font({
+                size: 11,
+                family: 'Arial',
+                weight: 'bold'
+              }),
+              haloColor: 'white',
+              haloSize: 1,
+              horizontalAlignment: 'center',
+              verticalAlignment: 'middle'
+            });
+
+            // Create label graphic
+            const labelGraphic = new Graphic({
+              geometry: midpoint,
+              symbol: textSymbol,
+              attributes: {
+                TYPE: 'LENGTH_LABEL',
+                LENGTH_METERS: lengthMeters,
+                LENGTH_TEXT: lengthText,
+                ASSOCIATED_LINE_INDEX: index
+              }
+            });
+
+            labelGraphics.push(labelGraphic);
+          }
+        } catch (error) {
+          console.warn(`Could not calculate length for line ${index}:`, error);
+        }
+      }
+    });
+
+    // Add all label graphics to the map
+    if (labelGraphics.length > 0) {
+      this.graphicsLayer.addMany(labelGraphics);
+      this.labelGraphics = labelGraphics;
+      console.log(`Added ${labelGraphics.length} length labels`);
+    }
+  }
+
+  /**
+   * Calculates the midpoint of a polyline geometry
+   */
+  private getLineMidpoint(polylineGeometry: any): Point | null {
+    try {
+      // For polylines, we'll use the centroid of the extent as a simple approach
+      const extent = polylineGeometry.extent;
+      if (extent && extent.center) {
+        return extent.center;
+      }
+
+      // Fallback: get the midpoint of the first path
+      if (polylineGeometry.paths && polylineGeometry.paths.length > 0) {
+        const firstPath = polylineGeometry.paths[0];
+        if (firstPath && firstPath.length > 0) {
+          const midIndex = Math.floor(firstPath.length / 2);
+          const midCoord = firstPath[midIndex];
+
+          return new Point({
+            x: midCoord[0],
+            y: midCoord[1],
+            spatialReference: polylineGeometry.spatialReference
+          });
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Could not calculate line midpoint:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Removes all length label graphics from the map
+   */
+  private clearLengthLabels(): void {
+    if (this.labelGraphics.length > 0) {
+      this.graphicsLayer.removeMany(this.labelGraphics);
+      this.labelGraphics = [];
+    }
   }
 }
